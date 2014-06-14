@@ -9,7 +9,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+const unsigned long PADDLE_RATE = 33;
 const unsigned long BALL_RATE = 16;
+const uint8_t PADDLE_HEIGHT = 24;
 
 // On MEGA, MOSI is 51, CLK is 52
 #define OLED_DC    11
@@ -25,6 +27,10 @@ uint8_t ball_x = 64, ball_y = 32;
 uint8_t ball_dir_x = 1, ball_dir_y = 1;
 unsigned long ball_update;
 
+unsigned long paddle_update;
+const uint8_t CPU_X = 12;
+uint8_t cpu_y = 16;
+
 void setup() {
     display.begin(SSD1306_SWITCHCAPVCC);
 
@@ -37,6 +43,7 @@ void setup() {
     display.display();
 
     ball_update = millis();
+    paddle_update = ball_update;
 }
 
 void loop() {
@@ -47,14 +54,22 @@ void loop() {
         uint8_t new_x = ball_x + ball_dir_x;
         uint8_t new_y = ball_y + ball_dir_y;
 
+        // Check if we hit the vertical walls
         if(new_x == 0 || new_x == 127) {
             ball_dir_x = -ball_dir_x;
             new_x += ball_dir_x + ball_dir_x;
         }
 
+        // Check if we hit the horizontal walls.
         if(new_y == 0 || new_y == 63) {
             ball_dir_y = -ball_dir_y;
             new_y += ball_dir_y + ball_dir_y;
+        }
+
+        // Check if we hit the CPU paddle
+        if(new_x == CPU_X && new_y > cpu_y && new_y < cpu_y + PADDLE_HEIGHT) {
+            ball_dir_x = -ball_dir_x;
+            new_x += ball_dir_x + ball_dir_x;
         }
 
         display.drawPixel(ball_x, ball_y, BLACK);
@@ -63,6 +78,27 @@ void loop() {
         ball_y = new_y;
 
         ball_update += BALL_RATE;
+
+        update = true;
+    }
+
+    if(time > paddle_update) {
+        paddle_update += PADDLE_RATE;
+
+        // CPU paddle
+        display.drawFastVLine(CPU_X, cpu_y, PADDLE_HEIGHT, BLACK);
+        const uint8_t half_paddle = PADDLE_HEIGHT >> 1;
+        if(cpu_y + half_paddle > ball_y) {
+            cpu_y -= 1;
+        }
+        if(cpu_y + half_paddle < ball_y) {
+            cpu_y += 1;
+        }
+
+        if(cpu_y < 1) cpu_y = 1;
+        if(cpu_y + PADDLE_HEIGHT > 62) cpu_y = 62;
+
+        display.drawFastVLine(CPU_X, cpu_y, PADDLE_HEIGHT, WHITE);
 
         update = true;
     }

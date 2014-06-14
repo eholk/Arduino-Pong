@@ -9,11 +9,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define UP_BUTTON 2
+#define DOWN_BUTTON 3
+
 const unsigned long PADDLE_RATE = 33;
 const unsigned long BALL_RATE = 16;
 const uint8_t PADDLE_HEIGHT = 24;
-
-#define UP_BUTTON 
 
 // On MEGA, MOSI is 51, CLK is 52
 #define OLED_DC    11
@@ -41,10 +42,16 @@ void setup() {
 
     // Display the splash screen (we're legally required to do so)
     display.display();
-    delay(2000);
+    unsigned long start = millis();
+
+    pinMode(UP_BUTTON, INPUT);
+    pinMode(DOWN_BUTTON, INPUT);
 
     display.clearDisplay();
     drawCourt();
+
+    while(millis() - start < 2000);
+
     display.display();
 
     ball_update = millis();
@@ -54,7 +61,13 @@ void setup() {
 void loop() {
     bool update = false;
     unsigned long time = millis();
+
+    static bool up_state = false;
+    static bool down_state = false;
     
+    up_state |= (digitalRead(UP_BUTTON) == LOW);
+    down_state |= (digitalRead(DOWN_BUTTON) == LOW);
+
     if(time > ball_update) {
         uint8_t new_x = ball_x + ball_dir_x;
         uint8_t new_y = ball_y + ball_dir_y;
@@ -109,14 +122,20 @@ void loop() {
             cpu_y += 1;
         }
         if(cpu_y < 1) cpu_y = 1;
-        if(cpu_y + PADDLE_HEIGHT > 62) cpu_y = 62;
+        if(cpu_y + PADDLE_HEIGHT > 63) cpu_y = 63 - PADDLE_HEIGHT;
         display.drawFastVLine(CPU_X, cpu_y, PADDLE_HEIGHT, WHITE);
 
         // Player paddle
         display.drawFastVLine(PLAYER_X, player_y, PADDLE_HEIGHT, BLACK);
-        // TODO: input handling goes here.
+        if(up_state) {
+            player_y -= 1;
+        }
+        if(down_state) {
+            player_y += 1;
+        }
+        up_state = down_state = false;
         if(player_y < 1) player_y = 1;
-        if(player_y + PADDLE_HEIGHT > 62) player_y = 62;
+        if(player_y + PADDLE_HEIGHT > 63) player_y = 63 - PADDLE_HEIGHT;
         display.drawFastVLine(PLAYER_X, player_y, PADDLE_HEIGHT, WHITE);
 
         update = true;

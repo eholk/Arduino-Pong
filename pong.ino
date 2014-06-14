@@ -13,6 +13,8 @@ const unsigned long PADDLE_RATE = 33;
 const unsigned long BALL_RATE = 16;
 const uint8_t PADDLE_HEIGHT = 24;
 
+#define UP_BUTTON 
+
 // On MEGA, MOSI is 51, CLK is 52
 #define OLED_DC    11
 #define OLED_CS    12
@@ -30,6 +32,9 @@ unsigned long ball_update;
 unsigned long paddle_update;
 const uint8_t CPU_X = 12;
 uint8_t cpu_y = 16;
+
+const uint8_t PLAYER_X = 115;
+uint8_t player_y = 16;
 
 void setup() {
     display.begin(SSD1306_SWITCHCAPVCC);
@@ -67,7 +72,16 @@ void loop() {
         }
 
         // Check if we hit the CPU paddle
-        if(new_x == CPU_X && new_y > cpu_y && new_y < cpu_y + PADDLE_HEIGHT) {
+        if(new_x == CPU_X && new_y >= cpu_y && new_y <= cpu_y + PADDLE_HEIGHT) {
+            ball_dir_x = -ball_dir_x;
+            new_x += ball_dir_x + ball_dir_x;
+        }
+
+        // Check if we hit the player paddle
+        if(new_x == PLAYER_X
+           && new_y >= player_y
+           && new_y <= player_y + PADDLE_HEIGHT)
+        {
             ball_dir_x = -ball_dir_x;
             new_x += ball_dir_x + ball_dir_x;
         }
@@ -94,11 +108,16 @@ void loop() {
         if(cpu_y + half_paddle < ball_y) {
             cpu_y += 1;
         }
-
         if(cpu_y < 1) cpu_y = 1;
         if(cpu_y + PADDLE_HEIGHT > 62) cpu_y = 62;
-
         display.drawFastVLine(CPU_X, cpu_y, PADDLE_HEIGHT, WHITE);
+
+        // Player paddle
+        display.drawFastVLine(PLAYER_X, player_y, PADDLE_HEIGHT, BLACK);
+        // TODO: input handling goes here.
+        if(player_y < 1) player_y = 1;
+        if(player_y + PADDLE_HEIGHT > 62) player_y = 62;
+        display.drawFastVLine(PLAYER_X, player_y, PADDLE_HEIGHT, WHITE);
 
         update = true;
     }
